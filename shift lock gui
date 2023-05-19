@@ -1,0 +1,65 @@
+local player = game.Players.LocalPlayer
+local playerGui = player.PlayerGui
+
+local shiftlockGui = Instance.new("ScreenGui")
+shiftlockGui.Name = "ShiftlockGui"
+shiftlockGui.Parent = playerGui
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Name = "ToggleButton"
+toggleButton.Text = "Shiftlock: On"
+toggleButton.Size = UDim2.new(0, 100, 0, 50)
+toggleButton.Position = UDim2.new(0, 10, 0, 10)
+toggleButton.Parent = shiftlockGui
+
+local shiftlockEnabled = true
+local lastMousePosition = nil
+
+local function toggleShiftlock()
+    shiftlockEnabled = not shiftlockEnabled
+
+    if shiftlockEnabled then
+        toggleButton.Text = "Shiftlock: On"
+    else
+        toggleButton.Text = "Shiftlock: Off"
+    end
+end
+
+toggleButton.MouseButton1Click:Connect(toggleShiftlock)
+
+-- Rotate character left or right based on camera position
+local function rotateCharacter()
+    local camera = workspace.CurrentCamera
+    local character = player.Character
+
+    if camera and character then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        local rootPart = character:FindFirstChild("HumanoidRootPart")
+
+        -- Calculate the angle between the camera and character
+        local cameraPosition = camera.CFrame.Position
+        local characterPosition = rootPart.Position
+        local lookVector = (cameraPosition - characterPosition).Unit
+
+        -- Calculate the angle in the horizontal plane
+        local angle = math.atan2(lookVector.X, lookVector.Z)
+
+        -- Smoothly interpolate the rotation when shift lock is enabled
+        if shiftlockEnabled then
+            if lastMousePosition then
+                local mouseDelta = userInputService:GetMouseDelta()
+                local deltaRotation = -mouseDelta.X * 0.01 -- Adjust the sensitivity here
+
+                angle = angle + deltaRotation
+            end
+
+            humanoid.AutoRotate = false
+            rootPart.CFrame = CFrame.new(characterPosition) * CFrame.Angles(0, angle, 0)
+            humanoid.AutoRotate = true
+        else
+            lastMousePosition = userInputService:GetMouseLocation()
+        end
+    end
+end
+
+game:GetService("RunService").RenderStepped:Connect(rotateCharacter)
